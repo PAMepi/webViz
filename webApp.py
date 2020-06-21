@@ -18,7 +18,9 @@ with open("data/mapaBr/map.geojson", 'r') as f:
 
 #################################################################################################################
 #Load data files
-seriesDF = pd.read_csv("data/series.csv")
+stateDF = pd.read_csv("data/dataState.csv")
+capitalDF = pd.read_csv("data/dataCapital.csv")
+inlandDF = pd.read_csv("data/dataInterior.csv")
 
 #################################################################################################################
 
@@ -62,7 +64,7 @@ def get_uf(feature = None):
 
 marks = [-70, -50, -25, 0, 25, 50, 70]
 colorScale = ["#2166ac", "#67a9cf", "#d1e5f0", "#f7f7f7", "#fddbc7", "#ef8a62", "#b2182b"]
-options = dict(hoverStyle = dict(weight = 5, color = '#666', dashArray = ''), zoomToBoundsOnClick = True)
+options = dict(hoverStyle = dict(weight = 5, color = '#666', dashArray = ''), zoomToBoundsOnClick = False)
 #################################################################################################################
 
 
@@ -104,8 +106,9 @@ graphlay = html.Div(children = [
 dropDowMenu = html.Div(children = [
     dcc.Dropdown(id = "graph_selector",
                 options = [
-                     {'label': 'Model', 'value': 'model'},
-                     {'label': 'R(t)', 'value': 'rt'},
+                     {'label': 'State', 'value': 'state'},
+                     {'label': 'Capital', 'value': 'capital'},
+                     {'label': "Inland cities", "value":"inland"}
                 ],
                 placeholder = "Select a graph",)
 
@@ -158,10 +161,17 @@ def info_hover(feature):
 #     return get_uf(feature)
 
 @app.callback(Output(component_id = "graph", component_property = "figure"),
-              [Input(component_id = "geojson", component_property = "featureHover")])
-def update_Graph(feature):
-    selected_state = get_uf(feature)
-    filtered_df = seriesDF[seriesDF["state"] == selected_state]
+              [Input(component_id = "geojson", component_property = "featureClick"),
+               Input(component_id = "graph_selector", component_property = "value")])
+def update_Graph(feature, selected_state):
+    if selected_state == "inland":
+        df  = inlandDF
+    elif selected_state == "capital":
+        df = capitalDF
+    else:
+        df = stateDF
+
+    filtered_df = df[df["state"] == get_uf(feature)]
 
     
     fitted_trace = go.Scatter(
@@ -184,17 +194,20 @@ def update_Graph(feature):
     lower_trace = go.Scatter(
         x  = filtered_df["date"],
         y =  filtered_df["Infec_lb"],
+        showlegend = False,
         marker = {"color":"#444"},
-        line = {"width":0}
+        line = {"width":0},
+        name = "95% CI"
     )
     upper_trace = go.Scatter(
         x  = filtered_df["date"],
         y =  filtered_df["Infec_ub"],
+        showlegend = False,
         marker = {"color":"#444"},
         mode = 'lines',
         fillcolor = 'rgba(68, 68, 68, 0.3)',
         fill = 'tonexty',
-        line = {"width":0}
+        line = {"width":0},
     )
     data = [lower_trace,fitted_trace,  upper_trace, observed_trace]
     layout = go.Layout(yaxis = {"title":"Cummulative cases"})
