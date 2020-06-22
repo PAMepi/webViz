@@ -85,8 +85,12 @@ colorbar = dlx.categorical_colorbar(categories = ctg,
 
 
 #################################################################################################################
+#specify css
+external_stylesheets = ['assets/style.css']
+
+
 #start dash application
-app = dash.Dash(prevent_initial_callbacks = True)
+app = dash.Dash(__name__,prevent_initial_callbacks = True, external_stylesheets = external_stylesheets)
 
 server = app.server
 
