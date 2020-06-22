@@ -90,11 +90,13 @@ colorbar = dlx.categorical_colorbar(categories = ctg,
 #start dash application
 app = dash.Dash(prevent_initial_callbacks = True)
 
+server = app.server
+
 #Create specfic layout for map info
 info = html.Div(children = get_info(), id = "info", className = "info",
                 style = {"position": "absolute", "top": "10px", "right": "10px", "z-index": "1000"})
 
-printSpace = html.Div(children = get_uf(), id = "my_print")
+#printSpace = html.Div(children = get_uf(), id = "my_print")
 
 
 #Create a layout for graph
