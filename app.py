@@ -50,13 +50,13 @@ def get_info(feature = None):
     header = [html.H4("Variation on transmission Rate")]
     if not feature:
         return header + ["Hoover over a state"]
-    return header + [html.B(feature["properties"]["NM_ESTADO"]), html.Br(),
+    return header + [html.B(feature["properties"]["name"]), html.Br(),
                      "{:.2f}".format(feature["properties"]["coefVar"])]
 
 def get_uf(feature = None):
     if not feature:
         return ["Select a state"]
-    return feature["properties"]["uf"]
+    return feature["properties"]["sigla"]
 
 
 
