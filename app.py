@@ -15,10 +15,10 @@ with open("data/mapaBr/map.geojson", 'r') as f:
     data = json.load(f)
 
 #################################################################################################################
-#Load data files
+#Load data files for model
 stateDF = pd.read_csv("data/dataState.csv")
 capitalDF = pd.read_csv("data/dataCapital.csv")
-inlandDF = pd.read_csv("data/dataInterior.csv")
+inlandDF = pd.read_csv("data/dataInland.csv")
 
 #################################################################################################################
 
@@ -49,7 +49,7 @@ def get_style(feature):
 def get_info(feature = None):
     header = [html.H4("Variation on transmission Rate")]
     if not feature:
-        return header + ["Hoover over a state"]
+        return header + ["Click on a state"]
     return header + [html.B(feature["properties"]["name"]), html.Br(),
                      "{:.2f}".format(feature["properties"]["coefVar"])]
 
@@ -57,6 +57,60 @@ def get_uf(feature = None):
     if not feature:
         return ["Select a state"]
     return feature["properties"]["sigla"]
+
+def plotTs(df):
+    fitted_trace = go.Scatter(
+        x  = df["date"],
+        y =  df["Infec"],
+        mode ='lines',
+        name = "Fitted",
+        line = {"color": "#d73027"}
+    )
+
+    observed_trace = go.Scatter(
+        x  = df["date"],
+        y =  df["cases"],
+        mode ='markers',
+        name = "Observed",
+        marker = {"color": "#253494","size":4}
+    )
+
+   
+    data = [fitted_trace, observed_trace]
+    layout = go.Layout(yaxis = {"title":"Cummulative cases"})
+
+    return {"data": data, "layout": layout}
+    
+def plotRt(df):
+    rt_trace = go.Scatter(
+        x  = df["date"],
+        y =  df["Rtdata"],
+        mode ='lines',
+        name = "Observed",
+        line = {"color": "#252525"}
+    )
+
+    mod_trace = go.Scatter(
+        x  = df["date"],
+        y =  df["Rtmod"],
+        mode ='lines',
+        name = "Smoothed",
+        line = {"color": "#225ea8", "dash":"dash"}
+    )
+    hline = go.Scatter(
+        x = df["date"],
+        y = [1] * len(df),
+        mode = "lines",
+        line = {"color": "#b2182b", "dash":"dash"},
+        showlegend = False
+    )
+
+   
+    data = [rt_trace, mod_trace, hline]
+    layout = go.Layout(yaxis = {"title":"Reproduction effective number",
+                                "range":[0,10]})
+
+    return {"data": data, "layout": layout}
 
 
 
@@ -107,16 +161,29 @@ graphlay = html.Div(children = [
 ],className = "twelve columns")
 
 #Create a core component for dropdow menu
-dropDowMenu = html.Div(children = [
-    dcc.Dropdown(id = "graph_selector",
+dropDowSate = html.Div(children = [
+    dcc.Dropdown(id = "state_selector",
                 options = [
                      {'label': 'State', 'value': 'state'},
                      {'label': 'Capital', 'value': 'capital'},
                      {'label': "Inland cities", "value":"inland"}
                 ],
-                placeholder = "Select a graph",)
+                value = "state"
+    )
 
-], className = "twelve columns")
+
+], className = "six columns")
+
+
+#Create a temporary drpdow for rt
+dropDowModel = html.Div(children = [
+    dcc.Dropdown(id = "graph_selector",
+                options = [
+                     {'label': 'R(t)', 'value': 'rt'},
+                     {'label': 'Model', 'value': 'model'},
+                ],
+                value = "model")
+], className = "six columns")
 
 #Create app layout
 app.layout = html.Div(children = [
@@ -143,7 +210,8 @@ app.layout = html.Div(children = [
 
         #Create right panel
         html.Div(children = [
-            dropDowMenu,
+            dropDowSate,
+            dropDowModel,
             #printSpace
             graphlay,
         ], className = "six columns")
@@ -154,7 +222,7 @@ app.layout = html.Div(children = [
 
 #################################################################################################################
 #add app functionality
-@app.callback(Output("info", "children"), [Input("geojson", "featureHover")])
+@app.callback(Output("info", "children"), [Input("geojson", "featureClick")])
 def info_hover(feature):
     return get_info(feature)
 
@@ -166,58 +234,20 @@ def info_hover(feature):
 
 @app.callback(Output(component_id = "graph", component_property = "figure"),
               [Input(component_id = "geojson", component_property = "featureClick"),
+               Input(component_id = "state_selector", component_property = "value"),
                Input(component_id = "graph_selector", component_property = "value")])
-def update_Graph(feature, selected_state):
+def update_Graph(feature, selected_state, selected_model):
     if selected_state == "inland":
         df  = inlandDF
     elif selected_state == "capital":
         df = capitalDF
     else:
         df = stateDF
-
     filtered_df = df[df["state"] == get_uf(feature)]
-
-    
-    fitted_trace = go.Scatter(
-        x  = filtered_df["date"],
-        y =  filtered_df["Infec_mean"],
-        mode ='lines',
-        name = "Fitted",
-        line = {"color": "#d73027"},
-        fillcolor ='rgba(68, 68, 68, 0.3)',
-        fill = 'tonexty'
-    )
-
-    observed_trace = go.Scatter(
-        x  = filtered_df["date"],
-        y =  filtered_df["cases"],
-        mode ='markers',
-        name = "Observed",
-        marker = {"color": "#253494","size":4}
-    )
-    lower_trace = go.Scatter(
-        x  = filtered_df["date"],
-        y =  filtered_df["Infec_lb"],
-        showlegend = False,
-        marker = {"color":"#444"},
-        line = {"width":0},
-        name = "95% CI"
-    )
-    upper_trace = go.Scatter(
-        x  = filtered_df["date"],
-        y =  filtered_df["Infec_ub"],
-        showlegend = False,
-        marker = {"color":"#444"},
-        mode = 'lines',
-        fillcolor = 'rgba(68, 68, 68, 0.3)',
-        fill = 'tonexty',
-        line = {"width":0},
-    )
-    data = [lower_trace,fitted_trace,  upper_trace, observed_trace]
-    layout = go.Layout(yaxis = {"title":"Cummulative cases"})
-
-    return {"data": data, "layout": layout}
-    return(filted_df)
+    if selected_model == "model":
+        return plotTs(df = filtered_df)
+    if selected_model == "rt":
+        return plotRt(df = filtered_df)
 
 #################################################################################################################
 
