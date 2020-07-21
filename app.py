@@ -1,6 +1,7 @@
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_bootstrap_components as dbc
 import dash_leaflet as dl
 from dash.dependencies import Output, Input
 from dash_leaflet import express as dlx
@@ -157,8 +158,8 @@ info = html.Div(children = get_info(), id = "info", className = "info",
 
 #Create a layout for graph
 graphlay = html.Div(children = [
-    dcc.Graph(id = "graph")
-],className = "twelve columns")
+    dcc.Graph(id = "graph", style={'margin':10})
+],className = "twelve columns", style={"border":"1px grey solid","border-radius":"12px"})
 
 #Create a core component for dropdow menu
 dropDowSate = html.Div(children = [
@@ -174,6 +175,13 @@ dropDowSate = html.Div(children = [
 
 ], className = "six columns")
 
+#Create a core component for change among capital, interior and whole state
+mapButtons = html.Div(children = [
+    dbc.Button("State", id = "b1"),
+    dbc.Button("Capital", id = "b2"),
+    dbc.Button("Inland", id = "b3"),
+
+], className = "twelve columns")
 
 #Create a temporary drpdow for rt
 dropDowModel = html.Div(children = [
@@ -192,7 +200,7 @@ app.layout = html.Div(children = [
     html.Div(children = [
         #Insert title
         html.H1("Assessing the nation wide impact of COVID-19 mitigation policies on the transmission rate of SARS-CoV-2 in Brazil"),
-    ], className = "twelve columns"),
+    ], className = "twelve columns color"),
 
     #Given space btetwen title and components
     html.Div(children = [html.Br()], className = "twelve columns"),
@@ -202,10 +210,11 @@ app.layout = html.Div(children = [
 
         #Create left panel
         html.Div(children = [
+            mapButtons,
             dl.Map(children = [dl.TileLayer(), geojson, colorbar, info],
                    center = [-20, -54],
                    zoom = 4,
-                   style = {'width': '100%', 'height': '70vh', 'margin': "auto", "display": "block"}, id = "map")
+                   style = {'width': '99%', 'height': '70vh', 'margin': "auto", "display": "block"}, id = "map")
         ], className = "six columns"),
 
         #Create right panel
