@@ -22,7 +22,7 @@ shinyServer(function(input, output, session) {
       )
     ) %>% 
       addTiles(options = providerTileOptions(opacity = 0.5)) %>% 
-      setView(lng=-52.761,lat=-14.446,zoom=4) %>% 
+      setView(lng=-55.761,lat=-14.446,zoom=4) %>% 
       addPolygons(color = "#718075", layerId = ~sigla, label = ~name,
                   
                   fillColor = ~pal(coefVar),
@@ -35,8 +35,8 @@ shinyServer(function(input, output, session) {
                   highlightOptions = highlightOptions(color = "#FFEE58", weight = 3,
                                                       dashArray = 2,
                                                       bringToFront = FALSE)) %>% 
-      addLegend(pal = pal, values = ~density, opacity = 1, title = NULL,
-                position = "bottomright")
+      addLegend(pal = pal, values = ~density, opacity = 1,
+                position = "bottomleft", title = "Variation on transmission rate")
     
     
   })
@@ -194,28 +194,67 @@ shinyServer(function(input, output, session) {
     
     my_df <- tibble(
       Parameter = c(
-        "beta_0", "beta_1", "beta_2" 
+        "beta_0", "beta_1", "beta_2",
+        "t_1", "t_2", "δ", "p", "k", "γ_a",
+        "γ_s", "h", "1 - ξ", "γ_H", "γ_U",
+        "μ_H", "μ_U", "ω_H", "ω_U"
       ),
       Description = c(
         "Pre-intervention transmission rate",
         "Post-intervention transmission rate",
-        "Post-intervention transmission rate"
+        "Post-intervention transmission rate",
+        "Time of transmission rate change",
+        "Time of transmission rate change",
+        "Asymptomatic/non-detected infectivity factor",
+        "Proportion of latent (E) that proceed
+        to symptomatic infective",
+        "Mean exposed period",
+        "Mean asymptomatic period",
+        "Mean symptomatic period",
+        "Proportion of symptomatic needing
+        hospitalization or ICU",
+        "Proportion of symptomatic that proceed to ICU",
+        "Mean hospitalization (clinical beds) period",
+        "Mean ICU period",
+        "Death rate of hospitalized individuals",
+        "Death rate of ICU individuals",
+        "Proportion od hospitalized that goes to ICU",
+        "Proportion of ICu that goes to hospítalization"
       ),
       Interval = c(
-        "[0-2]", "[0-2]", "[0-2]"
+        "[0-2]", "[0-2]", "[0-2]",
+        "[March 15th, April 15th]",
+        "[April 15th, September 13th]",
+        "[0, 0.75]", "[0.13, 0.5]",
+        "[1/6, 1/3]", "[1/3.70, 1/3.24]",
+        "[1/5, 1/3]", "[0.05, 0.25]",
+        "[0.01, 0.5]", "[1/12, 1/4]",
+        "[1/12, 3]", "[0.1, 0.2]",
+        "[0.4, 0.5]", "[0.1, 0.3]",
+        "[0.1, 0.3]"
       ),
       Fixed = c(
-        "-", "-", "-"
+        "-", "-", "-", "-", "-", "-",
+        "0.2", "1/4", "1/3.5", "1/4",
+        "-", "0.47", "-", "-", "0.15",
+        "0.4", "0.14", "0.29"
       ),
       Estimated = c(
         "1.40 (1.37 - 1.43)",
         "0.96 (0.94 - 0.98)",
-        "0.66 (0.65 - 0.68)"
+        "0.66 (0.65 - 0.68)",
+        "April 3nd", "June 11th",
+        "0.31 (0.30 - 0.32)",
+        "-", "-", "-", "-",
+        "0.06 (0.06, 0.064)",
+        "-", "0.18 (0.17 - 0.18)",
+        "0.13 (0.13, 0.14)",
+        "-","-","-","-"
       )
     )
     rhandsontable(my_df,
                   rowHeaders = NULL,readOnly = TRUE,
-                  width = 700, height = 300)
+                  width = 700, height = 600)
   })
   
   

@@ -5,35 +5,74 @@ shinyUI(shiny::bootstrapPage(
   
   useShinydashboard(),
   useShinyalert(),
+  
   fluidPage(
+    fluidRow(
+      column(2),
+      column(8,
+         HTML("<br><br><center> <h1>Assessing the nation wide impact of COVID-19 
+         mitigation policies on the transmission rate of SARS-CoV-2 in Brazil</h1> </center><br>")
+      ),
+      column(2)
+    ),
+    fluidRow(
+      
+      style = "height:50px;"),
+    
+    tags$hr(),
+    
+    fluidRow(
+      column(2),
+      column(8,
+             h4("COVID-19 is now identified in almost all countries in the world, 
+              with poorer regions being particularly more disadvantaged to efficiently 
+              mitigate the impacts of the pandemic. In the absence of efficient therapeutics or 
+              vaccines, control strategies are currently based on non-pharmaceutical interventions, 
+              comprising changes in population behavior and governmental interventions, among which
+              the prohibition of mass gatherings, closure of non-essential establishments, 
+              quarantine and movement restrictions. In this work we analyzed the effects of 547
+              published governmental interventions, and population adherence thereof, on the dynamics
+              of COVID-19 cases across all 27 Brazilian states, with emphasis on state capitals and
+              remaining inland cities.", style="text-align: justify;")
+      ),
+      column(2)
+    ),
+    fluidRow(
+      
+      style = "height:50px;"),
+    
+    tags$hr(),
+    
+    
     column(width = 5,
            box(leaflet::leafletOutput("brasil_map",
                                       height = "500px"),width = 12)
     ),
-    box(
+    tabBox(
       width = 7,
-      tabsetPanel(
       tabPanel(
         "Visualizations",
         column(width = 12,
                fluidRow(
-                 splitLayout(
-                   div(br(), pickerInput("model_loc", "", 
-                                         width = "70%",
-                                         choices = c(
-                                           "State" = "state",
-                                           "Capital" = "capital",
-                                           "Inland cities" = "inland"
-                                         )
-                   ), style = "height:150px;"
-                   ),
-                   div(br(), pickerInput("model_or_rt", "",
-                                         width = "70%",
-                                         choices = c(
-                                           "R(t)" = "rt",
-                                           "Model" = "model"
-                                         ), selected = "model"
-                   ), style = "height:150px;"
+                 column(
+                   width = 5,
+                   pickerInput("model_loc", "", 
+                               width = "100%",
+                               choices = c(
+                                 "State" = "state",
+                                 "Capital" = "capital",
+                                 "Inland cities" = "inland"
+                               )
+                   )
+                 ),
+                 column(
+                   width = 5,
+                   pickerInput("model_or_rt", "",
+                               width = "100%",
+                               choices = c(
+                                 "R(t)" = "rt",
+                                 "Model" = "model"
+                               ), selected = "model"
                    )
                  )
                ),
@@ -41,11 +80,29 @@ shinyUI(shiny::bootstrapPage(
         )
       ),
       tabPanel(
-        "Tables",
+        "Table",
         rHandsontableOutput("tab_int", 100, 120)
       )
-    )
-    )
+    ),
+    
+    fluidRow(style = "height:50px;"),
+    
+    tags$hr(),
+    
+    fluidRow(
+      column(12,
+             HTML("<hr><center>"),HTML("<h1>Support:</h1>"),HTML("&emsp;&emsp;"),
+             a(href= "https://www.gov.br/en",img(src="capes_logo.png",width=400*0.25), target="_blank"),
+             HTML("&emsp;&emsp;"),
+             a(href= "https://cidacs.bahia.fiocruz.br/en/",
+               img(src="CIDACS_logoBW.png",width=400*0.6), target="_blank"),            
+             HTML("&emsp;&emsp;</center></hr>")
+      )
+    ),
+    fluidRow(style = "height:50px;"),
+    
+    tags$hr()
+    
   ),
   tags$style(type = "text/css", 
              HTML('img {
