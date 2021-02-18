@@ -2,15 +2,15 @@ shinyServer(function(input, output, session) {
   
   output$brasil_map <- renderLeaflet({
     
-    bins <- quantile(br_mapa$coefVar, 
-                     probs = c(seq(0, 100, by = 30), 100)/100)
+    bins <- quantile(br_mapa$cases, 
+                     probs = c(seq(0, 100, by = 25))/100)
     #bins <- seq(-80, 80, by = 20)
     
-    pal <- colorBin("YlOrRd", domain = br_mapa$coefVar, bins = bins)
+    pal <- colorBin("YlOrRd", domain = br_mapa$cases, bins = bins)
     
     labels <- paste0(
       "<strong>",br_mapa$name,"</strong><br/>",
-      "Variation on transmission rate <strong>", br_mapa$coefVar,"</strong>") %>%
+      "<strong>", br_mapa$cases, "</strong> confirmed state cases as in May 22nd") %>%
       lapply(htmltools::HTML)
     
     leaflet(
@@ -25,7 +25,7 @@ shinyServer(function(input, output, session) {
       setView(lng=-55.761,lat=-14.446,zoom=4) %>% 
       addPolygons(color = "#718075", layerId = ~sigla, label = ~name,
                   
-                  fillColor = ~pal(coefVar),
+                  fillColor = ~pal(cases),
                   popup = labels,
                   dashArray = "3",
                   popupOptions = popupOptions(autoClose = TRUE, closeOnClick = TRUE ,
@@ -36,7 +36,8 @@ shinyServer(function(input, output, session) {
                                                       dashArray = 2,
                                                       bringToFront = FALSE)) %>% 
       addLegend(pal = pal, values = ~density, opacity = 1,
-                position = "bottomleft", title = "Variation on transmission rate")
+                labFormat = labelFormat(digits = 0, between = "  &ndash;  "), 
+                position = "bottomleft", title = "Confirmed state cases")
     
     
   })
@@ -88,6 +89,27 @@ shinyServer(function(input, output, session) {
     
   })
   
+  data_beta <- reactive({
+    beta <- switch(
+      input$model_loc,
+      "state" = seiir_fits %>% 
+        filter(type %in% "estado"),
+      "capital" = seiir_fits %>% 
+        filter(type %in% "capital"),
+      "inland" = seiir_fits %>% 
+        filter(type %in% "interior")
+    )
+  })
+  
+  data_rt <- reactive({
+    rt <- switch(
+      input$model_loc,
+      "state" = est_rts,
+      "capital" = cap_rts,
+      "inland" = int_rts
+    )
+  })
+  
   output$trans_rate_output <- renderHighchart({
     
     validate(
@@ -96,6 +118,41 @@ shinyServer(function(input, output, session) {
     
     df <- data_select() %>%
       filter(state %in% state_proxy()[1])
+    
+    beta_df <- data_beta() %>% 
+      filter(state %in% state_proxy()[1])
+    
+    rt_df <- data_rt() %>% 
+      filter(state %in% state_proxy()[1])
+    
+    df_lm_res <- lm(Infec ~ cases, data = df)
+    RMSE <- sqrt(mean(df_lm_res$residuals^2)) %>% round(digits = 2)
+    
+    k <- 50
+    t <- seq(1, 200, 1)
+    t1 <- beta_df$tcut0 %>% median()
+    t2 <- beta_df$tcut1 %>% median(na.rm = TRUE)
+    b <- beta_df$beta0 %>% median() 
+    b1 <- beta_df$beta1 %>% median()
+    b2 <- beta_df$beta2 %>% median(na.rm = TRUE)
+    
+    H <- function(t){
+      h <- 1.0/(1.0+ exp(-2.0*k*t))
+    }
+    
+    beta <- function(t,t1,t2,b,b1,b2){
+      
+      if(is.na(beta_df$beta2[1])){
+        beta <- b*H(t1-t) + b1*H(t-t1) 
+      } else{
+        beta <- b*H(t1-t) + b1*H(t2-t)*H(t-t1) + b2*H(t-t2)
+      }
+      
+      return(
+        round(beta, digits = 2)
+      )
+    }
+    
     
     switch(
       input$model_or_rt,
@@ -137,34 +194,76 @@ shinyServer(function(input, output, session) {
                                 onclick = JS("function() {this.yAxis[0].update({type: 'linear'});}")
             ),
             customButton2 = list(text = 'Logarithmic',
-                                  onclick = JS("function() {this.yAxis[0].update({type: 'logarithmic'});}")
+                                 onclick = JS("function() {this.yAxis[0].update({type: 'logarithmic'});}")
             )
           )
         ),
+      "beta_series" = 
+        highchart() %>%
+        hc_title(text = paste0("<b>β</b> ", paste0(input$model_loc), ": ",
+                               "<b>",
+                               state_proxy()[1],
+                               "</b>"),
+                 margin = 20, align = "left",
+                 style = list(color = "#05091A", useHTML = TRUE, fontSize = "15px")) %>%
+        hc_yAxis(title = list(text = "<b>β</b>")) %>%
+        hc_add_series(beta(t,t1,t2,b,b1,b2),
+                      type = "line", name = "Beta", color = "#17a2b8"
+        ),
+      "model_qual" =
+        highchart() %>%
+        hc_title(text = paste0("Goodness of fit ", paste0(input$model_loc), ": ",
+                               "<b>",
+                               state_proxy()[1],
+                               "</b>"),
+                 margin = 20, align = "left",
+                 style = list(color = "#05091A", useHTML = TRUE, fontSize = "15px")) %>% 
+        hc_xAxis(title = list(text = "Observed"), min = 0, 
+                 max = max(c(df$cases,df$Infec))) %>% 
+        hc_yAxis(title = list(text = "Fit"), min = 0, 
+                 max = max(c(df$cases,df$Infec))) %>% 
+        hc_add_series(showInLegend = FALSE,
+                      color = "#A9A9A9", dashStyle = 'ShortDot',
+                      data = list(list(0, 0), 
+                                  list(max(c(df$cases,df$Infec)),
+                                       max(c(df$cases,df$Infec)))),
+                      enableMouseTracking = FALSE) %>% 
+        hc_plotOptions(line = list(color = "#4471EB",
+                                   marker = list(enabled = FALSE)),
+                       scatter = list(color = "black")) %>% 
+        hc_add_series(data = df, hcaes(x = cases, y = round(Infec)),
+                      tooltip = list(pointFormat = paste0(
+                        "<b>Fit<b>: {point.y}<br><b>RMSE<b>: ", RMSE, "<br>"
+                      ),
+                                     headerFormat = "<b>Observed<b>: {point.x}<br>"),
+                      type = "scatter", showInLegend = FALSE),
       "rt" = 
         highchart() %>% 
-        hc_add_series(data = df,
-                      hcaes(x = date, y = round(Rtdata, 3)), type = "line",
+        #hc_add_series(
+        #  data = rt_df , hcaes(x = date, low = Rtmod_lb,
+        #                       high = Rtmod_ub),
+        #  showInLegend = FALSE,  enableMouseTracking = FALSE, 
+        #  type = "arearange",color = hex_to_rgba("#F59B67", 0.5),
+        #  linkedTo = "mod",
+        #  fillOpacity = 0.3
+        #) %>% 
+        hc_add_series(data = rt_df ,
+                      hcaes(x = date, y = round(Rtdata, 3)), type = "point",
                       name = "Observed", color = "black"
         ) %>%
-        hc_add_series(data = df,
+        hc_add_series(data = rt_df ,
                       hcaes(x = date, y = round(Rtmod, 3)), type = "line",
-                      name = "Smoothed", color = "blue",
+                      name = "Smoothed", color = "#17a2b8", id = "mod",
                       dashStyle = "LongDash"
         ) %>% 
-        hc_plotOptions(line = list(marker = list(enabled = FALSE))) %>% 
+        hc_plotOptions(line = list(marker = list(enabled = FALSE)),
+                       arearange = list(marker = list(enabled = FALSE))
+        ) %>% 
         hc_yAxis(plotLines = list(list(color = "#FA3B42", value = 1, 
                                        width = 1.5, dashStyle = "ShortDash")),
-                 min = min(df$Rtdata), title = list(text = "Reproduction effective number")
-        ) %>% 
-        #hc_add_series(
-        #  data = df, hcaes(x = date, low = reproductionNumberLow,
-        #                        high = reproductionNumberHigh),
-        #  showInLegend = FALSE,  enableMouseTracking = FALSE, 
-        #  type = "errorbar",color = "black",
-        #  stemWidth = 1.5,  whiskerLength = 5
-        #) %>% 
-        #hc_add_series(TsRt_df, type = "scatter", hcaes(x = date, y = reproductionNumber,
+                 min = 0, title = list(text = "Reproduction effective number")
+        ) %>%
+        #hc_add_series(rt_df, type = "scatter", hcaes(x = date, y = reproductionNumber,
         #                                               group = infec#, group = infec
         #),
         #color = c("#36B36D", "#B33024"),
@@ -176,85 +275,55 @@ shinyServer(function(input, output, session) {
                                "</b>"),
                  margin = 20, align = "left",
                  style = list(color = "#05091A", useHTML = TRUE, fontSize = "15px"))
-        #hc_tooltip(formatter = JS("function(){
-        #                                        return (
-        #                                                'Rt : ' + this.y +
-        #                                        ' <br> Data: ' + Highcharts.dateFormat('%e. %b', new Date(this.x))
-        #                                                )
-        #                        }")) %>% 
-        #hc_exporting(enabled = TRUE)
+      #hc_tooltip(formatter = JS("function(){
+      #                                        return (
+      #                                                'Rt : ' + this.y +
+      #                                        ' <br> Data: ' + Highcharts.dateFormat('%e. %b', new Date(this.x))
+      #                                                )
+      #                        }")) %>% 
+      #hc_exporting(enabled = TRUE)
     )
     
     
     
   })
   
+  observeEvent(input$tab_tour, {
+    shinyalert("About the confidence intervals", 
+               "The  confidence intervals lies within the boundaries of the 25% and 95% percentile of each parameter", 
+               type = "info")
+  })
   
-  output$tab_int <- renderRHandsontable({
-    
-    my_df <- tibble(
-      Parameter = c(
-        "beta_0", "beta_1", "beta_2",
-        "t_1", "t_2", "δ", "p", "k", "γ_a",
-        "γ_s", "h", "1 - ξ", "γ_H", "γ_U",
-        "μ_H", "μ_U", "ω_H", "ω_U"
-      ),
-      Description = c(
-        "Pre-intervention transmission rate",
-        "Post-intervention transmission rate",
-        "Post-intervention transmission rate",
-        "Time of transmission rate change",
-        "Time of transmission rate change",
-        "Asymptomatic/non-detected infectivity factor",
-        "Proportion of latent (E) that proceed
-        to symptomatic infective",
-        "Mean exposed period",
-        "Mean asymptomatic period",
-        "Mean symptomatic period",
-        "Proportion of symptomatic needing
-        hospitalization or ICU",
-        "Proportion of symptomatic that proceed to ICU",
-        "Mean hospitalization (clinical beds) period",
-        "Mean ICU period",
-        "Death rate of hospitalized individuals",
-        "Death rate of ICU individuals",
-        "Proportion od hospitalized that goes to ICU",
-        "Proportion of ICu that goes to hospítalization"
-      ),
-      Interval = c(
-        "[0-2]", "[0-2]", "[0-2]",
-        "[March 15th, April 15th]",
-        "[April 15th, September 13th]",
-        "[0, 0.75]", "[0.13, 0.5]",
-        "[1/6, 1/3]", "[1/3.70, 1/3.24]",
-        "[1/5, 1/3]", "[0.05, 0.25]",
-        "[0.01, 0.5]", "[1/12, 1/4]",
-        "[1/12, 3]", "[0.1, 0.2]",
-        "[0.4, 0.5]", "[0.1, 0.3]",
-        "[0.1, 0.3]"
-      ),
-      Fixed = c(
-        "-", "-", "-", "-", "-", "-",
-        "0.2", "1/4", "1/3.5", "1/4",
-        "-", "0.47", "-", "-", "0.15",
-        "0.4", "0.14", "0.29"
-      ),
-      Estimated = c(
-        "1.40 (1.37 - 1.43)",
-        "0.96 (0.94 - 0.98)",
-        "0.66 (0.65 - 0.68)",
-        "April 3nd", "June 11th",
-        "0.31 (0.30 - 0.32)",
-        "-", "-", "-", "-",
-        "0.06 (0.06, 0.064)",
-        "-", "0.18 (0.17 - 0.18)",
-        "0.13 (0.13, 0.14)",
-        "-","-","-","-"
+  output$selec_state <- renderUI({
+    validate(
+      need(state_proxy()[1] != "TOTAL", "Please click on a state")
+    )
+    HTML(
+      paste0(
+        "<h1>", state_proxy()[1], "</h1>"
       )
     )
-    rhandsontable(my_df,
-                  rowHeaders = NULL,readOnly = TRUE,
-                  width = 700, height = 600)
+  })
+  output$info_tab <- renderRHandsontable({
+    
+    validate(
+      need(state_proxy()[1] != "TOTAL", "Please click on a state")
+    )
+    df <- info_tab %>% 
+      filter(state %in% state_proxy()[1]) %>% 
+      mutate(
+        type = factor(type,
+                      levels = c("State", "Capital", "Inland cities"))
+      ) %>% 
+      arrange(type) %>% 
+      select(-state) %>% t()
+    
+    rhandsontable(
+      df,
+      rowHeaderWidth = 100, readOnly = TRUE,
+      width = 800, height = 300
+    )
+    
   })
   
   

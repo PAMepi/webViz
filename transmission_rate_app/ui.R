@@ -5,12 +5,13 @@ shinyUI(shiny::bootstrapPage(
   
   useShinydashboard(),
   useShinyalert(),
+  introjsUI(),
   
   fluidPage(
     fluidRow(
       column(2),
       column(8,
-         HTML("<br><br><center> <h1>Assessing the nation wide impact of COVID-19 
+             HTML("<br><br><center> <h1>Assessing the nation wide impact of COVID-19 
          mitigation policies on the transmission rate of SARS-CoV-2 in Brazil</h1> </center><br>")
       ),
       column(2)
@@ -51,7 +52,7 @@ shinyUI(shiny::bootstrapPage(
     tabBox(
       width = 7,
       tabPanel(
-        "Visualizations",
+        "Model",
         column(width = 12,
                fluidRow(
                  column(
@@ -71,7 +72,9 @@ shinyUI(shiny::bootstrapPage(
                                width = "100%",
                                choices = c(
                                  "R(t)" = "rt",
-                                 "Model" = "model"
+                                 "Model" = "model",
+                                 "Goodness of fit" = "model_qual",
+                                 "Betas" = "beta_series"
                                ), selected = "model"
                    )
                  )
@@ -81,7 +84,14 @@ shinyUI(shiny::bootstrapPage(
       ),
       tabPanel(
         "Table",
-        rHandsontableOutput("tab_int", 100, 120)
+        shiny::fluidRow(
+          column(htmlOutput("selec_state"), width = 1),
+          column(br(),actionBttn("tab_tour", icon = icon("info"), 
+                                 color = "primary",style = "material-circle",
+                                 size = "sm",
+                                 label = ""), width = 3)
+        ),
+        rHandsontableOutput("info_tab", 120, 120)
       )
     ),
     
