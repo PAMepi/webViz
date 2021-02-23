@@ -19,6 +19,10 @@ info_tab <- seiir_fits %>%
       )
     )
   )
+p <- .2
+gammaA <- 1/3.5
+gammaS <- 1/4
+
 
 info_tab %>% 
   transmute(
@@ -53,8 +57,12 @@ info_tab %>%
       delta_median, " (", delta_low, " - ",  delta_high, ")"
     ),
     R0 = paste0(
-      round(beta0_median/(1/3.5) + (beta0_median*delta_median)/(1/4),
-            digits = 2)
+      round(
+        
+        (beta0_median*p)/(gammaS) +
+          (beta0_median*delta_median*(1-p))/(gammaA),
+        
+        digits = 2)
     )
   ) %>% 
   write_csv(file = "info_tab.csv")
