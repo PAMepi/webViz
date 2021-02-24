@@ -6,6 +6,8 @@ seiir_fits <- list.files(pattern = "seiir_fits",
 seiir_fits %>% 
   write_csv(file = "seiir_fits.csv")
 
+date_cut <- seq(ymd('2020-01-01'),ymd('2020-05-22'), by = '1 day')
+
 info_tab <- seiir_fits %>% 
   select(state:delta) %>% 
   group_by(state, type) %>% 
@@ -44,13 +46,23 @@ info_tab %>%
       )
     ),
     tcut0 = paste0(
-      tcut0_median, " (", tcut0_low, " - ",  tcut0_high, ")"
+      date_cut[round(tcut0_median)] %>% format('%b/%d'),
+      " (",
+      date_cut[round(tcut0_low)] %>% format('%b/%d'), 
+      " - ",
+      date_cut[round(tcut0_high)] %>% format('%b/%d'),
+      ")"
     ),
     tcut1 = 
       ifelse(
         is.na(tcut1_median), "-",
         paste0(
-          tcut1_median, " (", tcut1_low, " - ",  tcut1_high, ")"
+          date_cut[round(tcut1_median)] %>% format('%b/%d'),
+          " (",
+          date_cut[round(tcut1_low)] %>% format('%b/%d'), 
+          " - ",
+          date_cut[round(tcut1_high)] %>% format('%b/%d'),
+          ")"
         )
       ),
     delta = paste0(

@@ -11,9 +11,9 @@ library(shinyalert)
 library(rhandsontable)
 library(rintrojs)
 
-capital <- read_csv("https://raw.githubusercontent.com/ModelingTaskForce/webViz/master/data/dataCapital.csv")
-state <- read_csv("https://raw.githubusercontent.com/ModelingTaskForce/webViz/master/data/dataState.csv")
-inland <- read_csv("https://raw.githubusercontent.com/ModelingTaskForce/webViz/master/data/dataInland.csv")
+capital <- read_csv("data/model/datacapital.csv")
+state <- read_csv("data/model/dataestado.csv")
+inland <- read_csv("data/model/datainterior.csv")
 
 last_cases <- state %>% 
   group_by(state) %>% 
