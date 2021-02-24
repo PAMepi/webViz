@@ -5,6 +5,7 @@ library(shinydashboard)
 library(leaflet)
 library(sf)
 library(highcharter)
+library(lubridate)
 
 library(shinyalert)
 library(rhandsontable)
