@@ -11,6 +11,7 @@ library(shinyalert)
 library(rhandsontable)
 library(rintrojs)
 
+
 capital <- read_csv("data/model/datacapital.csv")
 state <- read_csv("data/model/dataestado.csv")
 inland <- read_csv("data/model/datainterior.csv")
@@ -39,3 +40,15 @@ seiir_fits <- read_csv("data/seiir_fits.csv",
 cap_rts <- read_csv("data/rts/Rtcapital.csv")
 est_rts <- read_csv("data/rts/Rtestado.csv")
 int_rts <- read_csv("data/rts/Rtinterior.csv")
+
+distancing <- read_csv("data/adst/distancing_series.csv") %>% 
+  mutate(date = date %>% 
+           str_replace("[[:space:]].*", "") %>% 
+           dmy()) %>% select(-state) %>% 
+  mutate_if(is.numeric, round, 2)
+
+stringency <- read_csv("data/adst/stringency_series.csv") %>% 
+  mutate(date = Date %>% 
+           str_replace("[[:space:]].*", "") %>% 
+           dmy()) %>% transmute(date, UF, indGeneral) %>% 
+  mutate_if(is.numeric, round, 2)

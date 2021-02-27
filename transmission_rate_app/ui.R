@@ -55,27 +55,43 @@ shinyUI(shiny::bootstrapPage(
         "Model",
         column(width = 12,
                fluidRow(
-                 column(
-                   width = 5,
-                   pickerInput("model_loc", "", 
-                               width = "100%",
-                               choices = c(
-                                 "State" = "state",
-                                 "Capital" = "capital",
-                                 "Inland cities" = "inland"
-                               )
+                 conditionalPanel(
+                   condition = "input.model_or_rt != 'str'",
+                   column(
+                     width = 3,
+                     pickerInput("model_loc", "", 
+                                 width = "100%",
+                                 choices = c(
+                                   "State" = "state",
+                                   "Capital" = "capital",
+                                   "Inland cities" = "inland"
+                                 )
+                     )
                    )
                  ),
                  column(
-                   width = 5,
+                   width = 3,
                    pickerInput("model_or_rt", "",
                                width = "100%",
                                choices = c(
                                  "R(t)" = "rt",
                                  "Model" = "model",
                                  "Goodness of fit" = "model_qual",
-                                 "Betas" = "beta_series"
+                                 "Betas" = "beta_series",
+                                 "Stringency" = "str"
                                ), selected = "model"
+                   )
+                 ),
+                 conditionalPanel(
+                   condition = "input.model_or_rt == 'model'",
+                   column(
+                     width = 5,
+                     br(),
+                     switchInput(
+                       inputId = "d_c",
+                       onLabel = "Daily",
+                       offLabel = "Cummulative"
+                     )
                    )
                  )
                ),

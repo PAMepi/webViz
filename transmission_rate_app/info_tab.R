@@ -1,3 +1,6 @@
+library(tidyverse)
+Sys.setlocale("LC_TIME", "English")
+
 seiir_fits <- list.files(pattern = "seiir_fits", 
                          path = "seiir_bootstrap",
                          full.names = TRUE) %>% 

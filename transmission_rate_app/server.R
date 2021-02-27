@@ -44,12 +44,14 @@ shinyServer(function(input, output, session) {
   
   shinyalert(
     title = "Warning",
-    text = "This is an app developed to assist in the
-    understanding of the paper: 
+    text = "
+    This webpage is an on-line ancillary material to the work 
     <a href='https://www.medrxiv.org/content/10.1101/2020.06.26.20140780v1.article-info' target='_blank'>
     Assessing the nation wide impact of COVID-19
     mitigation policies on the transmission rate of SARS-CoV-2
-    in Brazil</a> and the last input date is from last year. User discretion is advised.",
+    in Brazil</a>.
+    Data shown here were collected during the period 02/25 - 05/22, 2020, and is not intended 
+    to be continuously updated.",
     size = "m", 
     closeOnEsc = TRUE,
     closeOnClickOutside = TRUE,
@@ -87,6 +89,7 @@ shinyServer(function(input, output, session) {
       "inland" = inland
     )
     
+    
   })
   
   data_beta <- reactive({
@@ -118,9 +121,19 @@ shinyServer(function(input, output, session) {
     
     df <- data_select() %>%
       filter(state %in% state_proxy()[1])
+    df <- if(input$d_c){
+      df
+    } else{
+      df %>% 
+        mutate_if(is.numeric, cumsum)
+    }
+    
+    axis_text <- ifelse(input$d_c, "Daily", "Cummulative")
     
     beta_df <- data_beta() %>% 
       filter(state %in% state_proxy()[1])
+    
+    date_cut <- seq(ymd('2020-01-01'),ymd('2020-05-22'), by = '1 day')
     
     rt_df <- data_rt() %>% 
       filter(state %in% state_proxy()[1])
@@ -153,23 +166,86 @@ shinyServer(function(input, output, session) {
       )
     }
     
+    dist_df <- distancing %>% 
+      filter(name %in% state_proxy()[1])
+    str_df <- stringency %>% 
+      filter(UF %in% state_proxy()[1])
+    
     
     switch(
       input$model_or_rt,
+      "str" = 
+        highchart() %>% 
+        #hc_title(text = paste0("Social mobility reduction index for: ",
+        #                       "<b>",
+        #                       state_proxy()[1],
+        #                       "</b>"),
+        #         margin = 20, align = "left",
+        #         style = list(color = "#05091A", useHTML = TRUE, fontSize = "15px")) %>% 
+        hc_xAxis(type = "datetime", dateTimeLabelFormats = list(day = '%d %b')) %>% 
+        hc_yAxis_multiples(
+          list(
+            title = list(text = "SMRI (%)"), opposite = FALSE
+          ),
+          list(
+            title = list(text = "Stringency index"),
+            showLastLabel = FALSE, opposite = TRUE
+          )
+        ) %>%
+        hc_add_series(data = dist_df,
+                      hcaes(x = date, y = indUF),
+                      type = "line", name = "State", 
+                      yAxis = 1, color = "#0072BD"
+        ) %>% 
+        hc_add_series(data = dist_df,
+                      hcaes(x = date, y = indCAP),
+                      type = "line", name = "Capital", 
+                      yAxis = 1, color = "#D95319"
+        ) %>% 
+        hc_add_series(data = dist_df,
+                      hcaes(x = date, y = indInland),
+                      type = "line", name = "Inland", 
+                      yAxis = 1, color = "#EDB120"
+        ) %>% 
+        hc_add_series(data = str_df,
+                      hcaes(x = date, y = indGeneral),
+                      type = "line", name = "Stringency index",
+                      color = "#7E2F8E"
+        ),
       "model" = 
         highchart() %>% 
         hc_add_series(data = df,
+                      hcaes(x = date, y = round(Infec_1)),
+                      type = "line", dashStyle = "Dash",
+                      name = "Infec 1", color = "#0EA8E6",
+                      visible = FALSE
+        ) %>% 
+        hc_add_series(data = df,
                       hcaes(x = date, y = cases), type = "scatter",
-                      name = "Observed", color = "#0EA8E6"
+                      name = "Observed", color = "#000000"
         ) %>% 
         hc_add_series(data = df,
                       hcaes(x = date, y = round(Infec)), type = "line",
                       
-                      name = "Fitted", color = "#FA4921"
+                      name = "Fitted", color = "#0EA8E6"
         ) %>% 
-        hc_xAxis(type = "datetime", dateTimeLabelFormats = list(day = '%d of %b')) %>% 
-        hc_yAxis(title = list(text = "Cummulative cases")) %>% 
-        hc_title(text = paste0("Cummulative cases ", paste0(input$model_loc), ": ",
+        hc_xAxis(type = "datetime", dateTimeLabelFormats = list(day = '%d of %b'),
+                 plotLines = list(
+                   list(color = "#FA3B42", 
+                        value = JS(
+                          paste0(
+                            "Date.UTC(2020,",
+                            month(date_cut[round(t1)]) - 1,
+                            ",",
+                            day(date_cut[round(t1)]),
+                            ")"
+                          )
+                        ), 
+                        width = 1.5, dashStyle = "ShortDash")
+                 )
+        ) %>% 
+        hc_yAxis(title = list(text = paste0(axis_text, " cases"))) %>% 
+        hc_title(text = paste0(axis_text, " cases ", paste0(input$model_loc), ": ",
                                "<b>",
                                state_proxy()[1],
                                "</b>"),
@@ -235,7 +311,7 @@ shinyServer(function(input, output, session) {
                       tooltip = list(pointFormat = paste0(
                         "<b>Fit<b>: {point.y}<br><b>RMSE<b>: ", RMSE, "<br>"
                       ),
-                                     headerFormat = "<b>Observed<b>: {point.x}<br>"),
+                      headerFormat = "<b>Observed<b>: {point.x}<br>"),
                       type = "scatter", showInLegend = FALSE),
       "rt" = 
         highchart() %>% 
