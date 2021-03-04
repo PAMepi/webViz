@@ -37,7 +37,7 @@ shinyServer(function(input, output, session) {
                                                       bringToFront = FALSE)) %>% 
       addLegend(pal = pal, values = ~density, opacity = 1,
                 labFormat = labelFormat(digits = 0, between = "  &ndash;  "), 
-                position = "bottomleft", title = "Confirmed state cases")
+                position = "bottomleft", title = "Confirmed state cases,<br> as of 22 May, 2020")
     
     
   })
@@ -51,8 +51,10 @@ shinyServer(function(input, output, session) {
     mitigation policies on the transmission rate of SARS-CoV-2
     in Brazil</a>.
     Data shown here were collected during the period 02/25 - 05/22, 2020, and is not intended 
-    to be continuously updated.",
+    to be continuously updated.<br>
+    <b>If you wish to learn more about every functionality of this platform click on the following tour button.</b>",
     size = "m", 
+    inputId = "shinyalerttour",
     closeOnEsc = TRUE,
     closeOnClickOutside = TRUE,
     html = TRUE,
@@ -65,6 +67,14 @@ shinyServer(function(input, output, session) {
     imageUrl = "",
     animation = FALSE
   )
+  
+  observeEvent(input$geral_tour,
+               introjs(session, options = list("nextLabel"="Next",
+                                               "prevLabel"="Previos",
+                                               "skipLabel"="Skip tour"),
+                       events = list("oncomplete"=I('alert("You are ready to use this plataform")')))
+  )
+  
   
   state_proxy <- reactive(
     {
@@ -127,8 +137,26 @@ shinyServer(function(input, output, session) {
       df %>% 
         mutate_if(is.numeric, cumsum)
     }
+    df <- if(input$lin_log){
+      df %>% 
+        mutate_if(is.numeric, log, 10) %>% 
+        mutate_if(is.numeric, list(~ na_if(., -Inf)))
+    } else {
+      df
+    }
     
-    axis_text <- ifelse(input$d_c, "Daily", "Cummulative")
+    axis_text <- if(input$d_c){
+      if(input$lin_log){
+        "Log(Daily cases)"
+      } else {
+        "Daily cases"
+      } 
+    } else {
+      if(input$lin_log){
+        "Log(Cummulative cases)"
+      } else "Cummulative cases"
+    }
+    
     
     beta_df <- data_beta() %>% 
       filter(state %in% state_proxy()[1])
@@ -156,14 +184,72 @@ shinyServer(function(input, output, session) {
     beta <- function(t,t1,t2,b,b1,b2){
       
       if(is.na(beta_df$beta2[1])){
+        # B_1 & B_0
         beta <- b*H(t1-t) + b1*H(t-t1) 
       } else{
+        # B_1 & B_0 & B_2
         beta <- b*H(t1-t) + b1*H(t2-t)*H(t-t1) + b2*H(t-t2)
       }
       
       return(
-        round(beta, digits = 2)
+        beta
       )
+    }
+    
+    beta_vec <- beta(t,t1,t2,b,b1,b2)
+    aux_df <- tibble(
+      date = seq(
+        df$date[1], max(date_cut), "1 day"
+      )
+    )
+    
+    plot_beta <- if(length(unique(beta_vec)) == 2){
+      aux_df %>% 
+        mutate(
+          beta = case_when(
+            date < date_cut[round(t1)]                              ~ unique(beta_vec)[1],
+            TRUE                                                    ~ unique(beta_vec)[2]
+          )
+        )
+    } else if(length(unique(beta_vec)) == 3 & !is.na(beta_df$beta2[1])){
+      aux_df %>% 
+        mutate(
+          beta = case_when(
+            date < date_cut[round(t1)]                              ~ unique(beta_vec)[1],
+            date >= date_cut[round(t1)] & date < date_cut[round(t2)]~ unique(beta_vec)[2],
+            TRUE                                                    ~ unique(beta_vec)[3]
+          )
+        )
+    } else if(length(unique(beta_vec)) == 4 & !is.na(beta_df$beta2[1])){
+      aux_df %>% 
+        mutate(
+          beta = case_when(
+            date < date_cut[round(t1)]                              ~ unique(beta_vec)[1],
+            date == date_cut[round(t1)]                             ~ unique(beta_vec)[2],
+            date >= date_cut[round(t1)] & date < date_cut[round(t2)]~ unique(beta_vec)[3],
+            TRUE                                                    ~ unique(beta_vec)[4]
+          )
+        )
+    } else if(is.na(beta_df$beta2[1])){
+      aux_df %>% 
+        mutate(
+          beta = case_when(
+            date < date_cut[round(t1)]                              ~ unique(beta_vec)[1],
+            date == date_cut[round(t1)]                             ~ unique(beta_vec)[2],
+            TRUE                                                    ~ unique(beta_vec)[3]
+          )
+        )
+    } else {
+      aux_df %>% 
+        mutate(
+          beta = case_when(
+            date < date_cut[round(t1)]                              ~ unique(beta_vec)[1],
+            date == date_cut[round(t1)]                             ~ unique(beta_vec)[2],
+            date > date_cut[round(t1)] & date < date_cut[round(t2)] ~ unique(beta_vec)[3],
+            date == date_cut[round(t2)]                             ~ unique(beta_vec)[4],
+            TRUE                                                    ~ unique(beta_vec)[5]
+          )
+        )
     }
     
     dist_df <- distancing %>% 
@@ -171,28 +257,30 @@ shinyServer(function(input, output, session) {
     str_df <- stringency %>% 
       filter(UF %in% state_proxy()[1])
     
-    
     switch(
       input$model_or_rt,
       "str" = 
         highchart() %>% 
-        #hc_title(text = paste0("Social mobility reduction index for: ",
-        #                       "<b>",
-        #                       state_proxy()[1],
-        #                       "</b>"),
-        #         margin = 20, align = "left",
-        #         style = list(color = "#05091A", useHTML = TRUE, fontSize = "15px")) %>% 
+        hc_title(text = paste0("Social mobility reduction index in: ",
+                               "<b>",
+                               state_proxy()[1],
+                               "</b>"),
+                 margin = 20, align = "left",
+                 style = list(color = "#05091A", useHTML = TRUE, fontSize = "15px")) %>% 
         hc_xAxis(type = "datetime", dateTimeLabelFormats = list(day = '%d %b')) %>% 
         hc_yAxis_multiples(
           list(
-            title = list(text = "SMRI (%)"), opposite = FALSE
+            title = list(text = "Stringency index"), opposite = TRUE,
+            min = 0, max = 100
           ),
           list(
-            title = list(text = "Stringency index"),
-            showLastLabel = FALSE, opposite = TRUE
+            title = list(text = "SMRI (%)",color = "#7E2F8E"),
+            showLastLabel = TRUE, opposite = FALSE, 
+            color = "#7E2F8E",
+            min = 25, max = 100
           )
         ) %>%
-        hc_add_series(data = dist_df,
+        hc_add_series(data = dist_df, 
                       hcaes(x = date, y = indUF),
                       type = "line", name = "State", 
                       yAxis = 1, color = "#0072BD"
@@ -215,17 +303,25 @@ shinyServer(function(input, output, session) {
       "model" = 
         highchart() %>% 
         hc_add_series(data = df,
-                      hcaes(x = date, y = round(Infec_1)),
+                      hcaes(x = date, y = Infec_1),
                       type = "line", dashStyle = "Dash",
-                      name = "Infec 1", color = "#0EA8E6",
+                      name = "Before countermeasure model", color = "#0EA8E6",
                       visible = FALSE
+        ) %>% 
+        hc_add_series(
+          data = df , hcaes(x = date, low = Infec_lb,
+                            high = Infec_ub ),
+          showInLegend = FALSE,  enableMouseTracking = FALSE, 
+          type = "arearange",color = hex_to_rgba("#0EA8E6", 0.5),
+          linkedTo = "mod",
+          fillOpacity = 0.2
         ) %>% 
         hc_add_series(data = df,
                       hcaes(x = date, y = cases), type = "scatter",
                       name = "Observed", color = "#000000"
         ) %>% 
         hc_add_series(data = df,
-                      hcaes(x = date, y = round(Infec)), type = "line",
+                      hcaes(x = date, y = Infec), type = "line",
                       
                       name = "Fitted", color = "#0EA8E6"
         ) %>% 
@@ -244,14 +340,16 @@ shinyServer(function(input, output, session) {
                         width = 1.5, dashStyle = "ShortDash")
                  )
         ) %>% 
-        hc_yAxis(title = list(text = paste0(axis_text, " cases"))) %>% 
-        hc_title(text = paste0(axis_text, " cases ", paste0(input$model_loc), ": ",
+        hc_yAxis(title = list(text = paste0(axis_text)),
+                 min = 0) %>% 
+        hc_title(text = paste0(axis_text, " ", paste0(input$model_loc), ": ",
                                "<b>",
                                state_proxy()[1],
                                "</b>"),
                  margin = 20, align = "left",
                  style = list(color = "#05091A", useHTML = TRUE, fontSize = "15px")) %>% 
         hc_plotOptions(line = list(marker = list(enabled = FALSE)),
+                       arearange = list(marker = list(enabled = FALSE)),
                        scatter = list(marker = list(symbol = "circle", radius = 3))) %>% 
         hc_tooltip(
           formatter = JS(
@@ -282,9 +380,13 @@ shinyServer(function(input, output, session) {
                                "</b>"),
                  margin = 20, align = "left",
                  style = list(color = "#05091A", useHTML = TRUE, fontSize = "15px")) %>%
-        hc_yAxis(title = list(text = "<b>β</b>")) %>%
-        hc_add_series(beta(t,t1,t2,b,b1,b2),
-                      type = "line", name = "Beta", color = "#17a2b8"
+        hc_add_series(data = plot_beta, 
+                      hcaes(x = date, y = round(beta, digits = 2)),
+                      type = "line", name = "Beta", 
+                      color = "#0072BD"
+        ) %>% 
+        hc_xAxis(type = "datetime", dateTimeLabelFormats = list(day = '%d %b')) %>% 
+        hc_yAxis(title = list(text = "<b>β</b>")
         ),
       "model_qual" =
         highchart() %>%

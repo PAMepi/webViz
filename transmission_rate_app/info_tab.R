@@ -73,11 +73,20 @@ info_tab %>%
     ),
     R0 = paste0(
       round(
-        
         (beta0_median*p)/(gammaS) +
           (beta0_median*delta_median*(1-p))/(gammaA),
-        
-        digits = 2)
+        digits = 2),
+      " (",
+      round(
+        (beta0_low*p)/(gammaS) +
+          (beta0_low*delta_low*(1-p))/(gammaA),
+        digits = 2),
+      " - ",
+      round(
+        (beta0_high*p)/(gammaS) +
+          (beta0_high*delta_high*(1-p))/(gammaA),
+        digits = 2),
+      ")"
     )
   ) %>% 
   write_csv(file = "info_tab.csv")

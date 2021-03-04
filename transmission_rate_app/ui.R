@@ -34,7 +34,9 @@ shinyUI(shiny::bootstrapPage(
               quarantine and movement restrictions. In this work we analyzed the effects of 547
               published governmental interventions, and population adherence thereof, on the dynamics
               of COVID-19 cases across all 27 Brazilian states, with emphasis on state capitals and
-              remaining inland cities.", style="text-align: justify;")
+              remaining inland cities.", style="text-align: justify;"),
+             br(),
+             column(width = 3, offset = 5,actionBttn(inputId = "geral_tour", label = "Tour"))
       ),
       column(2)
     ),
@@ -46,8 +48,17 @@ shinyUI(shiny::bootstrapPage(
     
     
     column(width = 5,
-           box(leaflet::leafletOutput("brasil_map",
-                                      height = "500px"),width = 12)
+           
+           box(
+             introBox(
+               leaflet::leafletOutput("brasil_map",
+                                      height = "500px"),
+               data.step = 1,
+               data.intro = "To begin click on a state",
+               data.hint = "click"
+             ),
+             width = 12
+           )
     ),
     tabBox(
       width = 7,
@@ -55,31 +66,43 @@ shinyUI(shiny::bootstrapPage(
         "Model",
         column(width = 12,
                fluidRow(
+                 
                  conditionalPanel(
                    condition = "input.model_or_rt != 'str'",
                    column(
-                     width = 3,
-                     pickerInput("model_loc", "", 
-                                 width = "100%",
-                                 choices = c(
-                                   "State" = "state",
-                                   "Capital" = "capital",
-                                   "Inland cities" = "inland"
-                                 )
+                     width = 2,
+                     
+                     introBox(
+                       data.step = 3,
+                       data.intro = "Dummy text3",
+                       data.hint = "click",
+                       pickerInput("model_loc", "", 
+                                   width = "100%",
+                                   choices = c(
+                                     "State" = "state",
+                                     "Capital" = "capital",
+                                     "Inland cities" = "inland"
+                                   )
+                       )
                      )
                    )
                  ),
                  column(
-                   width = 3,
-                   pickerInput("model_or_rt", "",
-                               width = "100%",
-                               choices = c(
-                                 "R(t)" = "rt",
-                                 "Model" = "model",
-                                 "Goodness of fit" = "model_qual",
-                                 "Betas" = "beta_series",
-                                 "Stringency" = "str"
-                               ), selected = "model"
+                   width = 2,
+                   introBox(
+                     data.step = 2,
+                     data.intro = "Dummy text2",
+                     data.hint = "click",
+                     pickerInput("model_or_rt", "",
+                                 width = "100%",
+                                 choices = c(
+                                   "R(t)" = "rt",
+                                   "Model" = "model",
+                                   "Goodness of fit" = "model_qual",
+                                   "Betas" = "beta_series",
+                                   "Stringency" = "str"
+                                 ), selected = "model"
+                     )
                    )
                  ),
                  conditionalPanel(
@@ -87,15 +110,41 @@ shinyUI(shiny::bootstrapPage(
                    column(
                      width = 5,
                      br(),
-                     switchInput(
-                       inputId = "d_c",
-                       onLabel = "Daily",
-                       offLabel = "Cummulative"
+                     introBox(
+                       switchInput(
+                         inputId = "d_c",
+                         onLabel = "Daily",
+                         offLabel = "Cummulative",
+                       ),
+                       data.step = 4,
+                       data.intro = "Dummy text4",
+                       data.hint = "click"
+                     )
+                   ),
+                   column(
+                     width = 3,
+                     br(),
+                     
+                     introBox(
+                       data.step = 5,
+                       data.intro = "Dummy text5",
+                       data.hint = "click",
+                       switchInput(
+                         inputId = "lin_log",
+                         onLabel = "Logarithmic",
+                         offLabel = "Linear"
+                       )
                      )
                    )
+                 ),
+                 
+                 introBox(
+                   data.step = 6,
+                   data.intro = "Dummy text6",
+                   data.hint = "click",
+                   highchartOutput("trans_rate_output", height = "400px")
                  )
-               ),
-               highchartOutput("trans_rate_output", height = "400px")
+               )
         )
       ),
       tabPanel(

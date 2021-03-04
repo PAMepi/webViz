@@ -6,15 +6,35 @@ library(leaflet)
 library(sf)
 library(highcharter)
 library(lubridate)
-
+#900d0d
+#423144
 library(shinyalert)
 library(rhandsontable)
 library(rintrojs)
 
 
-capital <- read_csv("data/model/datacapital.csv")
-state <- read_csv("data/model/dataestado.csv")
-inland <- read_csv("data/model/datainterior.csv")
+capital <- read_csv("data/model/datacapital.csv") %>% 
+  mutate(
+    # Fix annotation error
+    cases = case_when(
+      cases < 0 ~ round((lead(cases) + lag(cases)) / 2),
+      TRUE      ~ cases
+    )
+  )
+state <- read_csv("data/model/dataestado.csv") %>% 
+  mutate(
+    cases = case_when(
+      cases < 0 ~ round((lead(cases) + lag(cases)) / 2),
+      TRUE      ~ cases
+    )
+  )
+inland <- read_csv("data/model/datainterior.csv") %>% 
+  mutate(
+    cases = case_when(
+      cases < 0 ~ round((lead(cases) + lag(cases)) / 2),
+      TRUE      ~ cases
+    )
+  )
 
 last_cases <- state %>% 
   group_by(state) %>% 
