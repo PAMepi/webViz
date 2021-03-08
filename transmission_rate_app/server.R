@@ -2,15 +2,16 @@ shinyServer(function(input, output, session) {
   
   output$brasil_map <- renderLeaflet({
     
-    bins <- quantile(br_mapa$cases, 
+    bins <- quantile(br_mapa$inc_state, 
                      probs = c(seq(0, 100, by = 25))/100)
     #bins <- seq(-80, 80, by = 20)
     
-    pal <- colorBin("YlOrRd", domain = br_mapa$cases, bins = bins)
+    pal <- colorBin("YlOrRd", domain = br_mapa$inc_state, bins = bins)
     
     labels <- paste0(
-      "<strong>",br_mapa$name,"</strong><br/>",
-      "<strong>", br_mapa$cases, "</strong> confirmed state cases as in May 22nd") %>%
+      "Incidence index in ", 
+      "<strong>",br_mapa$name,"</strong> :","<br/>",
+      "<strong>", round(br_mapa$inc_state, digits = 2), "</strong>") %>%
       lapply(htmltools::HTML)
     
     leaflet(
@@ -25,7 +26,7 @@ shinyServer(function(input, output, session) {
       setView(lng=-55.761,lat=-14.446,zoom=4) %>% 
       addPolygons(color = "#718075", layerId = ~sigla, label = ~name,
                   
-                  fillColor = ~pal(cases),
+                  fillColor = ~pal(inc_state),
                   popup = labels,
                   dashArray = "3",
                   popupOptions = popupOptions(autoClose = TRUE, closeOnClick = TRUE ,
@@ -37,7 +38,7 @@ shinyServer(function(input, output, session) {
                                                       bringToFront = FALSE)) %>% 
       addLegend(pal = pal, values = ~density, opacity = 1,
                 labFormat = labelFormat(digits = 0, between = "  &ndash;  "), 
-                position = "bottomleft", title = "Confirmed state cases,<br> as of 22 May, 2020")
+                position = "bottomleft", title = "Incidence index,<br> as of 22 May, 2020")
     
     
   })
@@ -299,7 +300,8 @@ shinyServer(function(input, output, session) {
                       hcaes(x = date, y = indGeneral),
                       type = "line", name = "Stringency index",
                       color = "#7E2F8E"
-        ),
+        ) %>% 
+        hc_tooltip(crosshairs = TRUE),
       "model" = 
         highchart() %>% 
         hc_add_series(data = df,
@@ -362,15 +364,15 @@ shinyServer(function(input, output, session) {
           style = list(fontSize = '13px')
         ) %>% 
         hc_exporting(
-          enabled = TRUE,
-          buttons = list(
-            customButton = list(text = 'Linear',
-                                onclick = JS("function() {this.yAxis[0].update({type: 'linear'});}")
-            ),
-            customButton2 = list(text = 'Logarithmic',
-                                 onclick = JS("function() {this.yAxis[0].update({type: 'logarithmic'});}")
-            )
-          )
+          enabled = TRUE#,
+          #buttons = list(
+          #  customButton = list(text = 'Linear',
+          #                      onclick = JS("function() {this.yAxis[0].update({type: 'linear'});}")
+          #  ),
+          #  customButton2 = list(text = 'Logarithmic',
+          #                       onclick = JS("function() {this.yAxis[0].update({type: 'logarithmic'});}")
+          #  )
+          #)
         ),
       "beta_series" = 
         highchart() %>%
@@ -387,6 +389,10 @@ shinyServer(function(input, output, session) {
         ) %>% 
         hc_xAxis(type = "datetime", dateTimeLabelFormats = list(day = '%d %b')) %>% 
         hc_yAxis(title = list(text = "<b>β</b>")
+        ) %>% 
+        hc_plotOptions(line = list(marker = list(enabled = FALSE)),
+                       arearange = list(marker = list(enabled = FALSE)),
+                       scatter = list(marker = list(symbol = "circle", radius = 3))
         ),
       "model_qual" =
         highchart() %>%
@@ -494,15 +500,29 @@ shinyServer(function(input, output, session) {
                       levels = c("State", "Capital", "Inland cities"))
       ) %>% 
       arrange(type) %>% 
-      select(-state) %>% t()
+      rename(
+        " "=type,
+        "&beta;&#8320;"=beta0,
+        "&beta;&#8321;"=beta1,
+        "&beta;&#8322;"=beta2,
+        "t&#8320;"=tcut0,
+        "t&#8321;"=tcut1,
+        "&delta;"=delta,
+        "R&#8320;"=R0,
+        "Date of first case" = date_first_case,
+        "Date of community transmission" = date_com_trans
+      ) %>% 
+      select(-state) %>% t() 
     
     rhandsontable(
       df,
-      rowHeaderWidth = 100, readOnly = TRUE,
-      width = 800, height = 300
-    )
+      rowHeaderWidth = 215, readOnly = TRUE,
+      width = 1200, height = 400
+    ) %>% 
+      hot_cols(colWidths = 200)
     
   })
+  
   
   
 })

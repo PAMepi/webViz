@@ -1,10 +1,14 @@
 library(tidyverse)
+library(lubridate)
+
 Sys.setlocale("LC_TIME", "English")
 
 seiir_fits <- list.files(pattern = "seiir_fits", 
                          path = "seiir_bootstrap",
                          full.names = TRUE) %>% 
   map_df(~read_csv(.))
+
+aux_date <- read_csv2("transmission_rate_app/data/aux_tab_dates.csv")
 
 seiir_fits %>% 
   write_csv(file = "seiir_fits.csv")
@@ -87,6 +91,20 @@ info_tab %>%
           (beta0_high*delta_high*(1-p))/(gammaA),
         digits = 2),
       ")"
+    )
+  ) %>% 
+  inner_join(aux_date) %>% 
+  mutate_at(c("date_first_case",
+              "date_com_trans"), as_date
+            ) %>% 
+  mutate(
+    date_first_case = case_when(
+      type == "State" ~ date_first_case %>% format('%b/%d'),
+      TRUE ~ "-"
+    ),
+    date_com_trans = case_when(
+      type == "State" ~ date_com_trans %>% format('%b/%d'),
+      TRUE ~ "-"
     )
   ) %>% 
   write_csv(file = "info_tab.csv")

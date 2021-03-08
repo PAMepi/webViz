@@ -2,25 +2,46 @@ library(shiny)
 
 
 shinyUI(shiny::bootstrapPage(
-  
+  #shiny::tags$header(
+  #  h1("Assessing the nation wide impact of COVID-19 
+  #       mitigation policies on the transmission rate of SARS-CoV-2 in Brazil",
+  #     style = "color: white;
+  #     background-color:#900d0d;
+  #     text-align: center;"
+  #  )
+  #),
   useShinydashboard(),
   useShinyalert(),
   introjsUI(),
   
+  
   fluidPage(
-    fluidRow(
-      column(2),
-      column(8,
-             HTML("<br><br><center> <h1>Assessing the nation wide impact of COVID-19 
-         mitigation policies on the transmission rate of SARS-CoV-2 in Brazil</h1> </center><br>")
-      ),
-      column(2)
-    ),
-    fluidRow(
-      
-      style = "height:50px;"),
+    #titlePanel(h1("Assessing the nation wide impact of COVID-19 
+    #     mitigation policies on the transmission rate of SARS-CoV-2 in Brazil",
+    #     style = "color: white;
+    #     background-color:#900d0d;
+    #     text-align: center;"),
+    #     windowTitle = "Assessing the nation wide impact of COVID-19 
+    #     mitigation policies on the transmission rate of SARS-CoV-2 in Brazil"
+    #),
     
-    tags$hr(),
+    #fluidRow(
+    #  column(2),
+    #  column(8,
+    #         h1("ssessing the nation wide impact of COVID-19 
+    #     mitigation policies on the transmission rate of SARS-CoV-2 in Brazil",
+    #     style = "color: white;
+    #     background-color:#900d0d;"),
+    #     HTML("<br><br><center> <h1>Assessing the nation wide impact of COVID-19 
+    #     mitigation policies on the transmission rate of SARS-CoV-2 in Brazil</h1> </center><br>")
+    #  ),
+    #  column(2)
+    #),
+    #fluidRow(
+    #  
+    #  style = "height:5px;"),
+    #
+    #tags$hr(),
     
     fluidRow(
       column(2),
@@ -42,7 +63,7 @@ shinyUI(shiny::bootstrapPage(
     ),
     fluidRow(
       
-      style = "height:50px;"),
+      style = "height:25px;"),
     
     tags$hr(),
     
@@ -50,6 +71,14 @@ shinyUI(shiny::bootstrapPage(
     column(width = 5,
            
            box(
+             #pickerInput("map_shp", "", 
+             #            width = "100%",
+             #            choices = c(
+             #              "State" = "state",
+             #              "Capital" = "capital",
+             #              "Inland cities" = "inland"
+             #            )
+             #),
              introBox(
                leaflet::leafletOutput("brasil_map",
                                       height = "500px"),
@@ -156,29 +185,60 @@ shinyUI(shiny::bootstrapPage(
                                  size = "sm",
                                  label = ""), width = 3)
         ),
-        rHandsontableOutput("info_tab", 120, 120)
+        rHandsontableOutput("info_tab", "100%", 120)
+        
       )
     ),
     
-    fluidRow(style = "height:50px;"),
-    
-    tags$hr(),
-    
-    fluidRow(
-      column(12,
-             HTML("<hr><center>"),HTML("<h1>Support:</h1>"),HTML("&emsp;&emsp;"),
-             a(href= "https://www.gov.br/en",img(src="capes_logo.png",width=400*0.25), target="_blank"),
-             HTML("&emsp;&emsp;"),
-             a(href= "https://cidacs.bahia.fiocruz.br/en/",
-               img(src="CIDACS_logoBW.png",width=400*0.6), target="_blank"),            
-             HTML("&emsp;&emsp;</center></hr>")
-      )
-    ),
-    fluidRow(style = "height:50px;"),
-    
-    tags$hr()
+    #fluidRow(style = "height:50px;"),
+    #
+    #tags$hr(),
+    #
+    #fluidRow(
+    #  shiny::tags$footer(
+    #    column(12,
+    #           HTML("<hr><center>"),HTML("<h1>Support:</h1>"),HTML("&emsp;&emsp;"),
+    #           a(href= "https://www.gov.br/en",img(src="capes_logo.png",width=400*0.25), target="_blank"),
+    #           HTML("&emsp;&emsp;"),
+    #           a(href= "https://cidacs.bahia.fiocruz.br/en/",
+    #             img(src="CIDACS_logoBW.png",width=400*0.6), target="_blank"),            
+    #           HTML("&emsp;&emsp;</center></hr>")
+    #    ),
+    #    style = "color: white;
+    #   background-color:#423144;
+    #   text-align: center;"
+    #  )
+    #)
     
   ),
+  shiny::tags$head(
+    h1("Assessing the nation wide impact of COVID-19 
+         mitigation policies on the transmission rate of SARS-CoV-2 in Brazil",
+       style = "
+       color: white;
+       background-color:#900d0d;
+       text-align: center;
+       width:100%;
+       z-index: 1000;
+       padding: 0px;
+       height:100%;"
+    )
+  ),
+  tags$footer(
+    HTML("<center>"),HTML("<h1>Support:</h1>"),HTML("&emsp;&emsp;"),
+    a(href= "https://www.gov.br/en",img(src="capes_logo.png",width=400*0.25), target="_blank"),
+    HTML("&emsp;&emsp;"),
+    a(href= "https://cidacs.bahia.fiocruz.br/en/",
+      img(src="CIDACS_Bw.png",width=400*0.6), target="_blank"),
+    align = "center",
+    style = "
+              bottom:0;
+              width:100%;
+              height:100%;
+              color: white;
+              padding: 10px;
+              background-color: #423144;
+              z-index: 1000;"),
   tags$style(type = "text/css", 
              HTML('img {
                       vertical-align: middle;

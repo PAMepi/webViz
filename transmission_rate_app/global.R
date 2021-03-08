@@ -36,16 +36,31 @@ inland <- read_csv("data/model/datainterior.csv") %>%
     )
   )
 
-last_cases <- state %>% 
-  group_by(state) %>% 
-  top_n(date, n = 1) %>% 
-  select(state, cases)
-
 br_mapa <- read_sf("data/mapa_br/map.json") %>% 
   inner_join(
-    last_cases,
+    state %>% 
+      group_by(state) %>% 
+      top_n(date, n = 1) %>% 
+      mutate(inc_state = (cases * 1e5)/population) %>% 
+      select(state, inc_state),
     by = c("sigla" = "state")
-  )
+  )# %>% 
+  #left_join(
+  #  capital %>% 
+  #    group_by(state) %>% 
+  #    top_n(date, n = 1) %>% 
+  #    mutate(inc_capital = (cases * 1e5)/population) %>% 
+  #    select(state, inc_capital),
+  #  by = c("sigla" = "state")
+  #) %>% 
+  #left_join(
+  #  inland %>% 
+  #    group_by(state) %>% 
+  #    top_n(date, n = 1) %>% 
+  #    mutate(inc_inland = (cases * 1e5)/population) %>% 
+  #    select(state, inc_inland),
+  #  by = c("sigla" = "state")
+  #)
 
 info_tab <- read_csv("data/info_tab.csv")
 seiir_fits <- read_csv("data/seiir_fits.csv",
