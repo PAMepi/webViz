@@ -16,6 +16,8 @@ shinyUI(shiny::bootstrapPage(
   
   
   fluidPage(
+    titlePanel("",windowTitle = "Assessing the nation wide impact of COVID-19 
+               mitigation policies on the transmission rate of SARS-CoV-2 in Brazil"),
     #titlePanel(h1("Assessing the nation wide impact of COVID-19 
     #     mitigation policies on the transmission rate of SARS-CoV-2 in Brazil",
     #     style = "color: white;
@@ -52,7 +54,7 @@ shinyUI(shiny::bootstrapPage(
               vaccines, control strategies are currently based on non-pharmaceutical interventions, 
               comprising changes in population behavior and governmental interventions, among which
               the prohibition of mass gatherings, closure of non-essential establishments, 
-              quarantine and movement restrictions. In this work we analyzed the effects of 547
+              quarantine and movement restrictions. In this work we analyzed the effects of 707
               published governmental interventions, and population adherence thereof, on the dynamics
               of COVID-19 cases across all 27 Brazilian states, with emphasis on state capitals and
               remaining inland cities.", style="text-align: justify;"),
@@ -83,7 +85,7 @@ shinyUI(shiny::bootstrapPage(
                leaflet::leafletOutput("brasil_map",
                                       height = "500px"),
                data.step = 1,
-               data.intro = "To begin click on a state",
+               data.intro = "The first thing you should do is to click on a state.",
                data.hint = "click"
              ),
              width = 12
@@ -103,7 +105,7 @@ shinyUI(shiny::bootstrapPage(
                      
                      introBox(
                        data.step = 3,
-                       data.intro = "Dummy text3",
+                       data.intro = "<h4>We have a result for the state, capital and inland cities</h4>. Which do you wish to see?",
                        data.hint = "click",
                        pickerInput("model_loc", "", 
                                    width = "100%",
@@ -120,7 +122,12 @@ shinyUI(shiny::bootstrapPage(
                    width = 2,
                    introBox(
                      data.step = 2,
-                     data.intro = "Dummy text2",
+                     data.intro = "<h4>Here you must select which result you would like to see.</h4>
+                     <ul>
+                      <li>In Rt you will find the transmission rate of the selected state.</li>
+                      <li>In Model you will find the fit of our model</li>
+                      <li>In goodness of fit....</li>
+                    </ul>  ",
                      data.hint = "click",
                      pickerInput("model_or_rt", "",
                                  width = "100%",
@@ -146,7 +153,7 @@ shinyUI(shiny::bootstrapPage(
                          offLabel = "Cummulative",
                        ),
                        data.step = 4,
-                       data.intro = "Dummy text4",
+                       data.intro = "Here you can select the profile of the series. You can see the cases daily or in a cumulative fashion.",
                        data.hint = "click"
                      )
                    ),
@@ -156,7 +163,8 @@ shinyUI(shiny::bootstrapPage(
                      
                      introBox(
                        data.step = 5,
-                       data.intro = "Dummy text5",
+                       data.intro = "<h3>Here you can select the scale of the y axis.</h3>
+                       Choose between logarithmic or linear scale",
                        data.hint = "click",
                        switchInput(
                          inputId = "lin_log",
@@ -169,7 +177,7 @@ shinyUI(shiny::bootstrapPage(
                  
                  introBox(
                    data.step = 6,
-                   data.intro = "Dummy text6",
+                   data.intro = "The result is this plot.",
                    data.hint = "click",
                    highchartOutput("trans_rate_output", height = "400px")
                  )
@@ -226,7 +234,7 @@ shinyUI(shiny::bootstrapPage(
   ),
   tags$footer(
     HTML("<center>"),HTML("<h1>Support:</h1>"),HTML("&emsp;&emsp;"),
-    a(href= "https://www.gov.br/en",img(src="capes_logo.png",width=400*0.25), target="_blank"),
+    a(href= "https://www.gov.br/en",img(src="capes_bw.png",width=400*0.25), target="_blank"),
     HTML("&emsp;&emsp;"),
     a(href= "https://cidacs.bahia.fiocruz.br/en/",
       img(src="CIDACS_Bw.png",width=400*0.6), target="_blank"),
@@ -237,7 +245,7 @@ shinyUI(shiny::bootstrapPage(
               height:100%;
               color: white;
               padding: 10px;
-              background-color: #423144;
+              background-color:#900d0d;
               z-index: 1000;"),
   tags$style(type = "text/css", 
              HTML('img {

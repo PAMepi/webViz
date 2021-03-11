@@ -38,7 +38,8 @@ shinyServer(function(input, output, session) {
                                                       bringToFront = FALSE)) %>% 
       addLegend(pal = pal, values = ~density, opacity = 1,
                 labFormat = labelFormat(digits = 0, between = "  &ndash;  "), 
-                position = "bottomleft", title = "Incidence index,<br> as of 22 May, 2020")
+                position = "bottomleft", 
+                title = "Incidence index per 100000 inhab.,<br>as of 22 May, 2020")
     
     
   })
@@ -136,8 +137,10 @@ shinyServer(function(input, output, session) {
       df
     } else{
       df %>% 
+        mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
         mutate_if(is.numeric, cumsum)
     }
+    
     df <- if(input$lin_log){
       df %>% 
         mutate_if(is.numeric, log, 10) %>% 
@@ -260,7 +263,7 @@ shinyServer(function(input, output, session) {
     
     switch(
       input$model_or_rt,
-      "str" = 
+      "str" = # str ----
         highchart() %>% 
         hc_title(text = paste0("Social mobility reduction index in: ",
                                "<b>",
@@ -302,7 +305,7 @@ shinyServer(function(input, output, session) {
                       color = "#7E2F8E"
         ) %>% 
         hc_tooltip(crosshairs = TRUE),
-      "model" = 
+      "model" = # model ----
         highchart() %>% 
         hc_add_series(data = df,
                       hcaes(x = date, y = Infec_1),
@@ -311,7 +314,8 @@ shinyServer(function(input, output, session) {
                       visible = FALSE
         ) %>% 
         hc_add_series(
-          data = df , hcaes(x = date, low = Infec_lb,
+          data = df %>% 
+            filter(!is.na(cases)), hcaes(x = date, low = Infec_lb,
                             high = Infec_ub ),
           showInLegend = FALSE,  enableMouseTracking = FALSE, 
           type = "arearange",color = hex_to_rgba("#0EA8E6", 0.5),
@@ -322,25 +326,29 @@ shinyServer(function(input, output, session) {
                       hcaes(x = date, y = cases), type = "scatter",
                       name = "Observed", color = "#000000"
         ) %>% 
-        hc_add_series(data = df,
+        hc_add_series(data = df %>% 
+                        filter(!is.na(cases)),
                       hcaes(x = date, y = Infec), type = "line",
                       
                       name = "Fitted", color = "#0EA8E6"
         ) %>% 
+        hc_add_series(data = df %>% 
+                        filter(date >= ymd('2020-05-22')),
+                      hcaes(x = date, y = Infec), type = "line",
+                      name = "Pred 15days", color = "#D93E30"
+                      ) %>% 
+        hc_add_series(
+          data = df %>% 
+            filter(date >= ymd('2020-05-22')), 
+          hcaes(x = date, low = Infec_lb,
+                                         high = Infec_ub ),
+          showInLegend = FALSE,  enableMouseTracking = FALSE, 
+          type = "arearange",color = hex_to_rgba("#D93E30", 0.5),
+          linkedTo = "mod",
+          fillOpacity = 0.2
+        ) %>% 
         hc_xAxis(type = "datetime", dateTimeLabelFormats = list(day = '%d of %b'),
-                 plotLines = list(
-                   list(color = "#FA3B42", 
-                        value = JS(
-                          paste0(
-                            "Date.UTC(2020,",
-                            month(date_cut[round(t1)]) - 1,
-                            ",",
-                            day(date_cut[round(t1)]),
-                            ")"
-                          )
-                        ), 
-                        width = 1.5, dashStyle = "ShortDash")
-                 )
+                 plotLines = vertical_lines(date_cut, t1, t2)
         ) %>% 
         hc_yAxis(title = list(text = paste0(axis_text)),
                  min = 0) %>% 
@@ -374,7 +382,7 @@ shinyServer(function(input, output, session) {
           #  )
           #)
         ),
-      "beta_series" = 
+      "beta_series" = # beta ----
         highchart() %>%
         hc_title(text = paste0("<b>β</b> ", paste0(input$model_loc), ": ",
                                "<b>",
@@ -394,7 +402,7 @@ shinyServer(function(input, output, session) {
                        arearange = list(marker = list(enabled = FALSE)),
                        scatter = list(marker = list(symbol = "circle", radius = 3))
         ),
-      "model_qual" =
+      "model_qual" = # good fit ----
         highchart() %>%
         hc_title(text = paste0("Goodness of fit ", paste0(input$model_loc), ": ",
                                "<b>",
@@ -421,7 +429,7 @@ shinyServer(function(input, output, session) {
                       ),
                       headerFormat = "<b>Observed<b>: {point.x}<br>"),
                       type = "scatter", showInLegend = FALSE),
-      "rt" = 
+      "rt" = # rt ----
         highchart() %>% 
         #hc_add_series(
         #  data = rt_df , hcaes(x = date, low = Rtmod_lb,
