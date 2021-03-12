@@ -39,7 +39,7 @@ shinyServer(function(input, output, session) {
       addLegend(pal = pal, values = ~density, opacity = 1,
                 labFormat = labelFormat(digits = 0, between = "  &ndash;  "), 
                 position = "bottomleft", 
-                title = "Incidence index per 100000 inhab.,<br>as of 22 May, 2020")
+                title = "Incidence per 100k in<br>the study period")
     
     
   })
@@ -310,7 +310,7 @@ shinyServer(function(input, output, session) {
         hc_add_series(data = df,
                       hcaes(x = date, y = Infec_1),
                       type = "line", dashStyle = "Dash",
-                      name = "Before countermeasure model", color = "#0EA8E6",
+                      name = "Uncontrolled epidemic", color = "#0EA8E6",
                       visible = FALSE
         ) %>% 
         hc_add_series(
@@ -335,7 +335,7 @@ shinyServer(function(input, output, session) {
         hc_add_series(data = df %>% 
                         filter(date >= ymd('2020-05-22')),
                       hcaes(x = date, y = Infec), type = "line",
-                      name = "Pred 15days", color = "#D93E30"
+                      name = "Forecast (15 days ahead)", color = "#D93E30"
                       ) %>% 
         hc_add_series(
           data = df %>% 
